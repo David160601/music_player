@@ -43,7 +43,6 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    print(videos.length);
     return Scaffold(
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60.0),
@@ -54,7 +53,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 EasyDebounce.debounce(
                     'my-debouncer', // <-- An ID for this particular debouncer
                     const Duration(
-                        milliseconds: 600), // <-- The debounce duration
+                        milliseconds: 1000), // <-- The debounce duration
                     () => handleChange() // <-- The target method
                     );
               },
