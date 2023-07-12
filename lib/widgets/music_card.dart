@@ -1,11 +1,12 @@
+import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:youtube_api/youtube_api.dart';
+import 'package:external_path/external_path.dart';
 
 class MusicCard extends StatefulWidget {
   final YouTubeVideo video;
@@ -28,14 +29,14 @@ class _MusicCardState extends State<MusicCard> {
             await yt.videos.streamsClient.getManifest(video.id.value);
         final audioStreamInfo = manifest.audioOnly.withHighestBitrate();
         final streamUrl = audioStreamInfo.url;
-        final dir = await getApplicationDocumentsDirectory();
+        var path = await ExternalPath.getExternalStoragePublicDirectory(
+            ExternalPath.DIRECTORY_MUSIC);
         await FlutterDownloader.enqueue(
             url: streamUrl.toString(),
-            fileName: widget.video.title,
-            savedDir: dir.path,
+            fileName: "${widget.video.title}.mp3",
+            savedDir: path,
             allowCellular: true,
             showNotification: true,
-            saveInPublicStorage: true,
             openFileFromNotification: true);
         await FlutterDownloader.registerCallback(downloadCallback);
         yt.close();
@@ -56,10 +57,7 @@ class _MusicCardState extends State<MusicCard> {
       String id = data[0];
       DownloadTaskStatus status = DownloadTaskStatus(data[1]);
       int progress = data[2];
-
-      setState(() {
-        downloadProgress = progress;
-      });
+      setState(() {});
     });
     FlutterDownloader.registerCallback(downloadCallback);
   }
@@ -79,7 +77,6 @@ class _MusicCardState extends State<MusicCard> {
 
   @override
   Widget build(BuildContext context) {
-    print(loading);
     return Card(
       child: Row(children: [
         Expanded(
@@ -104,21 +101,12 @@ class _MusicCardState extends State<MusicCard> {
             )),
           ],
         )),
-        downloadProgress > 0
-            ? const Padding(
-                padding: EdgeInsets.all(8.0),
-                child: CircularProgressIndicator(),
-              )
-            : IconButton(
-                onPressed: () {
-                  downloadFile();
-                },
-                icon: const Icon(Icons.download)),
+        IconButton(
+            onPressed: () {
+              downloadFile();
+            },
+            icon: const Icon(Icons.download)),
       ]),
     );
   }
-}
-
-class TestClass {
-  static void callback(String id, DownloadTaskStatus status, int progress) {}
 }
