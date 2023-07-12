@@ -57,7 +57,9 @@ class _MusicCardState extends State<MusicCard> {
       String id = data[0];
       DownloadTaskStatus status = DownloadTaskStatus(data[1]);
       int progress = data[2];
-      setState(() {});
+      setState(() {
+        downloadProgress = progress;
+      });
     });
     FlutterDownloader.registerCallback(downloadCallback);
   }
@@ -101,11 +103,14 @@ class _MusicCardState extends State<MusicCard> {
             )),
           ],
         )),
-        IconButton(
-            onPressed: () {
-              downloadFile();
-            },
-            icon: const Icon(Icons.download)),
+        if (downloadProgress > 0 && downloadProgress < 100)
+          Text('$downloadProgress%')
+        else
+          IconButton(
+              onPressed: () {
+                downloadFile();
+              },
+              icon: const Icon(Icons.download)),
       ]),
     );
   }
