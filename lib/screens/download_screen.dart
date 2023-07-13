@@ -15,46 +15,51 @@ class DownloadScreen extends StatefulWidget {
 class _DownloadScreenState extends State<DownloadScreen> {
   late List<DownloadTask> _runningTasks = [];
   bool loading = false;
-
+  final Map<String, int> downloadProgress = {};
   ReceivePort _port = ReceivePort();
 
   @override
   void initState() {
     super.initState();
     _getTasks();
-    // IsolateNameServer.registerPortWithName(
-    //     _port.sendPort, 'downloader_send_port');
-    // _port.listen((dynamic data) {
-    //   String id = data[0];
-    //   DownloadTaskStatus status = DownloadTaskStatus(data[1]);
-    //   int progress = data[2];
-    //   setState(() {});
-    // });
+    IsolateNameServer.registerPortWithName(
+        _port.sendPort, 'downloader_send_port');
+    _port.listen((dynamic data) {
+      String id = data[0];
+      DownloadTaskStatus status = DownloadTaskStatus(data[1]);
+      int progress = data[2];
+      setState(() {
+        downloadProgress[id] = progress;
+      });
+    });
 
-    // FlutterDownloader.registerCallback(downloadCallback);
+    FlutterDownloader.registerCallback(downloadCallback);
   }
 
-  // @override
-  // void dispose() {
-  //   IsolateNameServer.removePortNameMapping('downloader_send_port');
-  //   super.dispose();
-  // }
+  @override
+  void dispose() {
+    IsolateNameServer.removePortNameMapping('downloader_send_port');
+    super.dispose();
+  }
 
-  // @pragma('vm:entry-point')
-  // static void downloadCallback(String id, int status, int progress) {
-  //   final SendPort? send =
-  //       IsolateNameServer.lookupPortByName('downloader_send_port');
-  //   send!.send([id, status, progress]);
-  // }
+  @pragma('vm:entry-point')
+  static void downloadCallback(String id, int status, int progress) {
+    final SendPort? send =
+        IsolateNameServer.lookupPortByName('downloader_send_port');
+    send!.send([id, status, progress]);
+  }
 
   Future<void> _getTasks() async {
     setState(() {
       loading = true;
     });
     final tasks = await FlutterDownloader.loadTasks();
-    final runningTasks = tasks!
-        .where((task) => task.status == DownloadTaskStatus.running)
-        .toList();
+    final runningTasks = tasks!.where((task) {
+      if (task.status == DownloadTaskStatus.running) {
+        downloadProgress[task.taskId] = task.progress;
+      }
+      return task.status == DownloadTaskStatus.running;
+    }).toList();
     setState(() {
       _runningTasks = runningTasks;
       loading = false;
@@ -63,6 +68,7 @@ class _DownloadScreenState extends State<DownloadScreen> {
 
   @override
   Widget build(BuildContext context) {
+    print(downloadProgress);
     return loading
         ? const Center(
             child: CircularProgressIndicator(),
@@ -84,11 +90,13 @@ class _DownloadScreenState extends State<DownloadScreen> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      subtitle: Text('${task.progress}%'),
-                      trailing: IconButton(
-                        onPressed: () {},
-                        icon: const Icon(Icons.cancel),
-                      ));
+                      subtitle: Text('${downloadProgress[task.taskId]}%'),
+                      trailing: downloadProgress[task.taskId]! < 100
+                          ? IconButton(
+                              onPressed: () {},
+                              icon: const Icon(Icons.cancel),
+                            )
+                          : Container());
                 },
               );
   }
