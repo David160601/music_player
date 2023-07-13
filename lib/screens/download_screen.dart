@@ -83,7 +83,6 @@ class _DownloadScreenState extends State<DownloadScreen> {
                     const Divider(),
                 itemBuilder: (context, index) {
                   final task = _runningTasks[index];
-
                   return ListTile(
                       title: Text(
                         task.filename ?? "Not available",
@@ -93,7 +92,13 @@ class _DownloadScreenState extends State<DownloadScreen> {
                       subtitle: Text('${downloadProgress[task.taskId]}%'),
                       trailing: downloadProgress[task.taskId]! < 100
                           ? IconButton(
-                              onPressed: () {},
+                              onPressed: () {
+                                FlutterDownloader.cancel(taskId: task.taskId);
+                                setState(() {
+                                  _runningTasks.remove(task);
+                                });
+                                
+                              },
                               icon: const Icon(Icons.cancel),
                             )
                           : Container());
