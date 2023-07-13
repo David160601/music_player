@@ -1,5 +1,6 @@
 import 'dart:io';
-
+import 'package:flutter_downloader/flutter_downloader.dart';
+import 'package:path/path.dart';
 import 'package:external_path/external_path.dart';
 import 'package:flutter/material.dart';
 
@@ -12,11 +13,20 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<File> musicFiles = [];
-
+  late List<DownloadTask> _runningTasks = [];
   @override
   void initState() {
     super.initState();
+    getTasks();
     getMusicFiles();
+  }
+
+  Future<void> getTasks() async {
+    final tasks = await FlutterDownloader.loadTasks();
+    final runningTasks = tasks!
+        .where((task) => task.status == DownloadTaskStatus.running)
+        .toList();
+    _runningTasks = runningTasks;
   }
 
   Future<void> getMusicFiles() async {
@@ -27,7 +37,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     List<File> mp3Files = [];
     for (FileSystemEntity file in files) {
-      if (file is File && file.path.endsWith('.mp3')) {
+      if (file is File &&
+          file.path.endsWith('.mp3') &&
+          !checkRunningFile(basename(file.path))) {
         mp3Files.add(file);
       }
     }
@@ -37,10 +49,39 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  bool checkRunningFile(String fileName) {
+    bool isRunning = false;
+    for (var item in _runningTasks) {
+      if (item.filename == fileName) {
+        isRunning = true;
+      }
+    }
+    return isRunning;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: Text("home screen"),
-    );
+    return musicFiles.isEmpty
+        ? const Center(
+            child: Text("No music data"),
+          )
+        : ListView.separated(
+            separatorBuilder: (BuildContext context, int index) =>
+                const Divider(),
+            itemCount: musicFiles.length,
+            itemBuilder: (context, index) {
+              String fileName = basename(musicFiles[index].path);
+              return ListTile(
+                trailing: IconButton(
+                  onPressed: () {},
+                  icon: const Icon(Icons.play_arrow),
+                ),
+                title: Text(
+                  fileName,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              );
+            });
   }
 }

@@ -21,6 +21,7 @@ class _SearchScreenState extends State<SearchScreen> {
   TextEditingController query = TextEditingController();
   List<YouTubeVideo> videos = [];
   bool loading = false;
+  final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   Future handleChange() async {
     setState(() {
       loading = true;
@@ -38,36 +39,6 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
-  ReceivePort _port = ReceivePort();
-
-  @override
-  void initState() {
-    super.initState();
-    IsolateNameServer.registerPortWithName(
-        _port.sendPort, 'downloader_send_port');
-    _port.listen((dynamic data) {
-      String id = data[0];
-      DownloadTaskStatus status = DownloadTaskStatus(data[1]);
-      int progress = data[2];
-      setState(() {});
-    });
-    FlutterDownloader.registerCallback(downloadCallback);
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    IsolateNameServer.removePortNameMapping('downloader_send_port');
-    query.dispose();
-  }
-
-  @pragma('vm:entry-point')
-  static void downloadCallback(String id, int status, int progress) {
-    final SendPort? send =
-        IsolateNameServer.lookupPortByName('downloader_send_port');
-    send!.send([id, status, progress]);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,6 +54,9 @@ class _SearchScreenState extends State<SearchScreen> {
         title: TextField(
             controller: query,
             onChanged: (value) {
+              setState(() {
+                loading = true;
+              });
               EasyDebounce.debounce(
                   'my-debouncer', // <-- An ID for this particular debouncer
                   const Duration(
@@ -123,6 +97,7 @@ class _SearchScreenState extends State<SearchScreen> {
             : Padding(
                 padding: const EdgeInsets.all(10),
                 child: ListView.builder(
+                    key: _listKey,
                     itemCount: videos.length,
                     itemBuilder: (context, index) {
                       return MusicCard(

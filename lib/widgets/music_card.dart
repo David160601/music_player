@@ -1,6 +1,3 @@
-import 'dart:isolate';
-import 'dart:ui';
-import 'package:music_player/screens/search_screen.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
@@ -17,7 +14,10 @@ class MusicCard extends StatefulWidget {
   State<MusicCard> createState() => _MusicCardState();
 }
 
-class _MusicCardState extends State<MusicCard> {
+class _MusicCardState extends State<MusicCard>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   bool loading = false;
 
   Future downloadFile() async {
@@ -90,7 +90,10 @@ class _MusicCardState extends State<MusicCard> {
           ],
         )),
         if (loading)
-          const CircularProgressIndicator()
+          const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: CircularProgressIndicator(),
+          )
         else
           IconButton(
               onPressed: () {
