@@ -20,9 +20,9 @@ class _TabScreenState extends State<TabScreen> {
 
   @override
   Widget build(BuildContext context) {
-    Widget bodyWidget = const HomeScreen();
+    Widget bodyWidget = HomeScreen();
     if (_selectedIndex == 0) {
-      bodyWidget = const HomeScreen();
+      bodyWidget = HomeScreen();
     } else {
       bodyWidget = const DownloadScreen();
     }

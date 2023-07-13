@@ -1,36 +1,61 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 
 class DownloadScreen extends StatefulWidget {
-  const DownloadScreen({super.key});
+  const DownloadScreen({Key? key}) : super(key: key);
 
   @override
-  State<DownloadScreen> createState() => _DownloadScreenState();
+  _DownloadScreenState createState() => _DownloadScreenState();
 }
 
 class _DownloadScreenState extends State<DownloadScreen> {
-  Future getTasks() async {
-    final tasks = await FlutterDownloader.loadTasks();
-    if (tasks != null) {
-      for (var task in tasks) {
-        print(task.filename);
-        print(task.savedDir);
-        print(task.progress);
-      }
-    }
+  late List<DownloadTask> _runningTasks = [];
+  bool loading = false;
+  @override
+  void initState() {
+    super.initState();
+    _getTasks();
   }
 
   @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    getTasks();
+  void dispose() {
+    super.dispose();
+  }
+
+  Future<void> _getTasks() async {
+    setState(() {
+      loading = true;
+    });
+    final tasks = await FlutterDownloader.loadTasks();
+    final runningTasks = tasks!
+        .where((task) => task.status == DownloadTaskStatus.running)
+        .toList();
+    setState(() {
+      _runningTasks = runningTasks;
+      loading = false;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Text("'hey"),
-    );
+    return loading
+        ? const Center(
+            child: CircularProgressIndicator(),
+          )
+        : ListView.builder(
+            itemCount: _runningTasks.length,
+            itemBuilder: (context, index) {
+              final task = _runningTasks[index];
+              return ListTile(
+                  title: Text(task.filename ?? "Not available"),
+                  subtitle: Text('${task.progress}%'),
+                  trailing: IconButton(
+                    onPressed: () {},
+                    icon: const Icon(Icons.cancel),
+                  ));
+            },
+          );
   }
 }

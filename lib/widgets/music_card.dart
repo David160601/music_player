@@ -1,6 +1,6 @@
-import 'dart:io';
 import 'dart:isolate';
 import 'dart:ui';
+import 'package:music_player/screens/search_screen.dart';
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
@@ -10,6 +10,7 @@ import 'package:external_path/external_path.dart';
 
 class MusicCard extends StatefulWidget {
   final YouTubeVideo video;
+
   const MusicCard({super.key, required this.video});
 
   @override
@@ -17,10 +18,13 @@ class MusicCard extends StatefulWidget {
 }
 
 class _MusicCardState extends State<MusicCard> {
-  var downloadProgress = 0;
   bool loading = false;
+
   Future downloadFile() async {
     try {
+      setState(() {
+        loading = true;
+      });
       final status = await Permission.manageExternalStorage.request();
       if (status.isGranted) {
         var yt = YoutubeExplode();
@@ -38,43 +42,25 @@ class _MusicCardState extends State<MusicCard> {
             allowCellular: true,
             showNotification: true,
             openFileFromNotification: true);
-        await FlutterDownloader.registerCallback(downloadCallback);
         yt.close();
       } else {}
+      setState(() {
+        loading = false;
+      });
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("${widget.video.title} added to download list"),
+      ));
     } catch (e) {
+      setState(() {
+        loading = false;
+      });
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+        content: Text("Error"),
+      ));
       throw Exception(e);
     }
-  }
-
-  ReceivePort _port = ReceivePort();
-
-  @override
-  void initState() {
-    super.initState();
-    IsolateNameServer.registerPortWithName(
-        _port.sendPort, 'downloader_send_port');
-    _port.listen((dynamic data) {
-      String id = data[0];
-      DownloadTaskStatus status = DownloadTaskStatus(data[1]);
-      int progress = data[2];
-      setState(() {
-        downloadProgress = progress;
-      });
-    });
-    FlutterDownloader.registerCallback(downloadCallback);
-  }
-
-  @override
-  void dispose() {
-    IsolateNameServer.removePortNameMapping('downloader_send_port');
-    super.dispose();
-  }
-
-  @pragma('vm:entry-point')
-  static void downloadCallback(String id, int status, int progress) {
-    final SendPort? send =
-        IsolateNameServer.lookupPortByName('downloader_send_port');
-    send!.send([id, status, progress]);
   }
 
   @override
@@ -103,8 +89,8 @@ class _MusicCardState extends State<MusicCard> {
             )),
           ],
         )),
-        if (downloadProgress > 0 && downloadProgress < 100)
-          Text('$downloadProgress%')
+        if (loading)
+          const CircularProgressIndicator()
         else
           IconButton(
               onPressed: () {

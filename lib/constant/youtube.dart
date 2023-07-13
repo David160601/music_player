@@ -1,1 +1,1 @@
-const youtubeApiKey = "AIzaSyATm4q6vP5hlSQeMCliXreexqqaNoCeJpY";
+const youtubeApiKey = "AIzaSyBlpK1ZyAkFnb0qGgsia1_oXlwLabdCQOI";
