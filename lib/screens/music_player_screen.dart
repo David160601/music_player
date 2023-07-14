@@ -32,9 +32,9 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   }
 
   @override
-  void initState() async {
+  void initState() {
     super.initState();
-    await widget.handlePlayMusic(widget.music);
+    start();
     widget.audioPlayer.onDurationChanged.listen((event) {
       setState(() {
         _duration = event;
@@ -46,6 +46,10 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
         _position = event;
       });
     });
+  }
+
+  void start() async {
+    await widget.handlePlayMusic(widget.music);
   }
 
   @override
