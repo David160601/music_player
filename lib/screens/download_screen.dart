@@ -14,9 +14,9 @@ class DownloadScreen extends StatefulWidget {
 
 class _DownloadScreenState extends State<DownloadScreen> {
   late List<DownloadTask> _runningTasks = [];
-  bool loading = false;
-  final Map<String, int> downloadProgress = {};
-  ReceivePort _port = ReceivePort();
+  bool _loading = false;
+  final Map<String, int> _downloadProgress = {};
+  final ReceivePort _port = ReceivePort();
 
   @override
   void initState() {
@@ -29,7 +29,7 @@ class _DownloadScreenState extends State<DownloadScreen> {
       DownloadTaskStatus status = DownloadTaskStatus(data[1]);
       int progress = data[2];
       setState(() {
-        downloadProgress[id] = progress;
+        _downloadProgress[id] = progress;
       });
     });
 
@@ -51,25 +51,35 @@ class _DownloadScreenState extends State<DownloadScreen> {
 
   Future<void> _getTasks() async {
     setState(() {
-      loading = true;
+      _loading = true;
     });
     final tasks = await FlutterDownloader.loadTasks();
     final runningTasks = tasks!.where((task) {
       if (task.status == DownloadTaskStatus.running) {
-        downloadProgress[task.taskId] = task.progress;
+        _downloadProgress[task.taskId] = task.progress;
       }
       return task.status == DownloadTaskStatus.running;
     }).toList();
     setState(() {
       _runningTasks = runningTasks;
-      loading = false;
+      _loading = false;
     });
+  }
+
+  void removeTask(DownloadTask task) {
+    try {
+      FlutterDownloader.remove(taskId: task.taskId);
+      setState(() {
+        _runningTasks.remove(task);
+      });
+    } catch (e) {
+      throw Exception(e);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    print(downloadProgress);
-    return loading
+    return _loading
         ? const Center(
             child: CircularProgressIndicator(),
           )
@@ -89,15 +99,11 @@ class _DownloadScreenState extends State<DownloadScreen> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      subtitle: Text('${downloadProgress[task.taskId]}%'),
-                      trailing: downloadProgress[task.taskId]! < 100
+                      subtitle: Text('${_downloadProgress[task.taskId]}%'),
+                      trailing: _downloadProgress[task.taskId]! < 100
                           ? IconButton(
                               onPressed: () {
-                                FlutterDownloader.cancel(taskId: task.taskId);
-                                setState(() {
-                                  _runningTasks.remove(task);
-                                });
-                                
+                                removeTask(_runningTasks[index]);
                               },
                               icon: const Icon(Icons.cancel),
                             )

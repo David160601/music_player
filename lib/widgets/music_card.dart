@@ -19,7 +19,6 @@ class _MusicCardState extends State<MusicCard>
   @override
   bool get wantKeepAlive => true;
   bool loading = false;
-
   Future downloadFile() async {
     try {
       setState(() {
@@ -53,7 +52,6 @@ class _MusicCardState extends State<MusicCard>
               allowCellular: true,
               showNotification: true,
               openFileFromNotification: true);
-
           yt.close();
         } else {}
         setState(() {
@@ -83,14 +81,12 @@ class _MusicCardState extends State<MusicCard>
         Expanded(
             child: Row(
           children: [
-            widget.video.thumbnail.medium.url != null
-                ? Image(
-                    height: 70,
-                    width: 130,
-                    fit: BoxFit.cover,
-                    image:
-                        NetworkImage(widget.video.thumbnail.medium.url ?? ""))
-                : Container(),
+            if (widget.video.thumbnail.medium.url != null)
+              Image(
+                  height: 70,
+                  width: 130,
+                  fit: BoxFit.cover,
+                  image: NetworkImage(widget.video.thumbnail.medium.url ?? "")),
             const SizedBox(
               width: 10,
             ),
@@ -102,17 +98,16 @@ class _MusicCardState extends State<MusicCard>
             )),
           ],
         )),
-        if (loading)
-          const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: CircularProgressIndicator(),
-          )
-        else
-          IconButton(
-              onPressed: () {
-                downloadFile();
-              },
-              icon: const Icon(Icons.download)),
+        loading
+            ? const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: CircularProgressIndicator(),
+              )
+            : IconButton(
+                onPressed: () {
+                  downloadFile();
+                },
+                icon: const Icon(Icons.download)),
       ]),
     );
   }

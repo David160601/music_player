@@ -20,44 +20,47 @@ class _TabScreenState extends State<TabScreen> {
 
   @override
   Widget build(BuildContext context) {
-    Widget bodyWidget = HomeScreen();
-    if (_selectedIndex == 0) {
-      bodyWidget = HomeScreen();
-    } else {
-      bodyWidget = const DownloadScreen();
-    }
+    List<Widget> bodyWidgets = [const HomeScreen(), const DownloadScreen()];
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          "MPX",
-          style: Theme.of(context).textTheme.titleLarge,
+      appBar: appBar(context),
+      body: bodyWidgets[_selectedIndex],
+      bottomNavigationBar: navigationBar(),
+    );
+  }
+
+  AppBar appBar(BuildContext context) {
+    return AppBar(
+      title: Text(
+        "MPX",
+        style: Theme.of(context).textTheme.titleLarge,
+      ),
+      actions: [
+        IconButton(
+            onPressed: () {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => SearchScreen()));
+            },
+            icon: const Icon(Icons.search))
+      ],
+    );
+  }
+
+  BottomNavigationBar navigationBar() {
+    return BottomNavigationBar(
+      elevation: 3,
+      items: const <BottomNavigationBarItem>[
+        BottomNavigationBarItem(
+          icon: Icon(Icons.home),
+          label: 'Home',
         ),
-        actions: [
-          IconButton(
-              onPressed: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => SearchScreen()));
-              },
-              icon: const Icon(Icons.search))
-        ],
-      ),
-      body: bodyWidget,
-      bottomNavigationBar: BottomNavigationBar(
-        elevation: 3,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.download),
-            label: 'Download',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.red,
-        onTap: _onItemTapped,
-      ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.download),
+          label: 'Download',
+        ),
+      ],
+      currentIndex: _selectedIndex,
+      selectedItemColor: Colors.red,
+      onTap: _onItemTapped,
     );
   }
 }

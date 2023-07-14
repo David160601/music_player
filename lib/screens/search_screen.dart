@@ -47,6 +47,12 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
+  @override
+  void dispose() {
+    super.dispose();
+    query.dispose();
+  }
+
   PreferredSizeWidget appbar() {
     return PreferredSize(
       preferredSize: const Size.fromHeight(60.0),

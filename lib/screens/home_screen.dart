@@ -12,16 +12,16 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<File> musicFiles = [];
+  List<File> _musicFiles = [];
   late List<DownloadTask> _runningTasks = [];
+  bool _loading = false;
   @override
   void initState() {
     super.initState();
-    getTasks();
-    getMusicFiles();
+    getMusics();
   }
 
-  Future<void> getTasks() async {
+  Future<void> getRunningTasks() async {
     final tasks = await FlutterDownloader.loadTasks();
     final runningTasks = tasks!
         .where((task) => task.status == DownloadTaskStatus.running)
@@ -29,27 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _runningTasks = runningTasks;
   }
 
-  Future<void> getMusicFiles() async {
-    String musicPath = await ExternalPath.getExternalStoragePublicDirectory(
-        ExternalPath.DIRECTORY_MUSIC);
-    Directory musicDir = Directory(musicPath);
-    List<FileSystemEntity> files = musicDir.listSync();
-
-    List<File> mp3Files = [];
-    for (FileSystemEntity file in files) {
-      if (file is File &&
-          file.path.endsWith('.mp3') &&
-          !checkRunningFile(basename(file.path))) {
-        mp3Files.add(file);
-      }
-    }
-
-    setState(() {
-      musicFiles = mp3Files;
-    });
-  }
-
-  bool checkRunningFile(String fileName) {
+  bool checkRunningTasks(String fileName) {
     bool isRunning = false;
     for (var item in _runningTasks) {
       if (item.filename == fileName) {
@@ -59,29 +39,66 @@ class _HomeScreenState extends State<HomeScreen> {
     return isRunning;
   }
 
+  Future<void> getMusicFiles() async {
+    String musicPath = await ExternalPath.getExternalStoragePublicDirectory(
+        ExternalPath.DIRECTORY_MUSIC);
+    Directory musicDir = Directory(musicPath);
+    List<FileSystemEntity> files = musicDir.listSync();
+    List<File> mp3Files = [];
+    for (FileSystemEntity file in files) {
+      if (file is File &&
+          file.path.endsWith('.mp3') &&
+          !checkRunningTasks(basename(file.path))) {
+        mp3Files.add(file);
+      }
+    }
+
+    setState(() {
+      _musicFiles = mp3Files;
+    });
+  }
+
+  Future<void> getMusics() async {
+    setState(() {
+      _loading = true;
+    });
+    await getRunningTasks();
+    await getMusicFiles();
+    setState(() {
+      _loading = false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return musicFiles.isEmpty
+    return _loading
         ? const Center(
-            child: Text("No music data"),
+            child: CircularProgressIndicator(),
           )
-        : ListView.separated(
-            separatorBuilder: (BuildContext context, int index) =>
-                const Divider(),
-            itemCount: musicFiles.length,
-            itemBuilder: (context, index) {
-              String fileName = basename(musicFiles[index].path);
-              return ListTile(
-                trailing: IconButton(
-                  onPressed: () {},
-                  icon: const Icon(Icons.play_arrow),
-                ),
-                title: Text(
-                  fileName,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              );
-            });
+        : _musicFiles.isEmpty
+            ? const Center(
+                child: Text("No music data"),
+              )
+            : listOfMusics();
+  }
+
+  ListView listOfMusics() {
+    return ListView.separated(
+        separatorBuilder: (BuildContext context, int index) => const Divider(),
+        itemCount: _musicFiles.length,
+        itemBuilder: (context, index) {
+          String fileName = basename(_musicFiles[index].path);
+          return ListTile(
+            trailing: IconButton(
+              onPressed: () {},
+              icon: const Icon(Icons.play_arrow),
+            ),
+            title: Text(
+              fileName,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          );
+        });
   }
 }
