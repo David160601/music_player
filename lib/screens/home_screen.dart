@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
+import 'package:music_player/screens/music_player_screen.dart';
 import 'package:path/path.dart';
 import 'package:external_path/external_path.dart';
 import 'package:flutter/material.dart';
@@ -15,10 +17,21 @@ class _HomeScreenState extends State<HomeScreen> {
   List<File> _musicFiles = [];
   late List<DownloadTask> _runningTasks = [];
   bool _loading = false;
-  @override
-  void initState() {
-    super.initState();
-    getMusics();
+  final _audioPlayer = AudioPlayer();
+  File? playedMusic;
+  Future<void> handlePlayMusic(File file) async {
+    if (playedMusic == null) {
+      await _audioPlayer.play(UrlSource(file.path));
+    } else {
+      if (file != playedMusic) {
+        await _audioPlayer.pause();
+        await _audioPlayer.play(UrlSource(file.path));
+      }
+    }
+    setState(() {
+      playedMusic = file;
+    });
+    _audioPlayer.setReleaseMode(ReleaseMode.loop);
   }
 
   Future<void> getRunningTasks() async {
@@ -70,6 +83,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    getMusics();
+  }
+
+  @override
   Widget build(BuildContext context) {
     return _loading
         ? const Center(
@@ -84,19 +103,39 @@ class _HomeScreenState extends State<HomeScreen> {
 
   ListView listOfMusics() {
     return ListView.separated(
-        separatorBuilder: (BuildContext context, int index) => const Divider(),
+        separatorBuilder: (BuildContext context, int index) => const Divider(
+              color: Colors.red,
+            ),
         itemCount: _musicFiles.length,
         itemBuilder: (context, index) {
           String fileName = basename(_musicFiles[index].path);
           return ListTile(
             trailing: IconButton(
-              onPressed: () {},
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) {
+                  return MusicPlayerScreen(
+                    music: _musicFiles[index],
+                    audioPlayer: _audioPlayer,
+                    handlePlayMusic: handlePlayMusic,
+                  );
+                }));
+              },
               icon: const Icon(Icons.play_arrow),
             ),
-            title: Text(
-              fileName,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            title: Row(
+              children: [
+                const Icon(Icons.music_note),
+                const SizedBox(
+                  width: 20,
+                ),
+                Expanded(
+                  child: Text(
+                    fileName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
             ),
           );
         });
