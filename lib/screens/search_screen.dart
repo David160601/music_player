@@ -18,25 +18,31 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  TextEditingController query = TextEditingController();
-  List<YouTubeVideo> videos = [];
-  bool loading = false;
+  final TextEditingController _query = TextEditingController();
+  List<YouTubeVideo> _videos = [];
+  bool _loading = false;
   final GlobalKey<AnimatedListState> _listKey = GlobalKey<AnimatedListState>();
   Future handleChange() async {
     setState(() {
-      loading = true;
+      _loading = true;
     });
     try {
-      videos = await YoutubeService.getVidoes(query.text);
+      _videos = await YoutubeService.getVidoes(_query.text);
     } catch (e) {
       setState(() {
-        loading = false;
+        _loading = false;
       });
       throw Exception("error fetching video");
     }
     setState(() {
-      loading = false;
+      _loading = false;
     });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _query.dispose();
   }
 
   @override
@@ -47,21 +53,15 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    super.dispose();
-    query.dispose();
-  }
-
   PreferredSizeWidget appbar() {
     return PreferredSize(
       preferredSize: const Size.fromHeight(60.0),
       child: AppBar(
         title: TextField(
-            controller: query,
+            controller: _query,
             onChanged: (value) {
               setState(() {
-                loading = true;
+                _loading = true;
               });
               EasyDebounce.debounce(
                   'my-debouncer', // <-- An ID for this particular debouncer
@@ -94,9 +94,9 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget body() {
-    return loading
+    return _loading
         ? const Center(child: CircularProgressIndicator())
-        : videos.isEmpty && query.text.isNotEmpty
+        : _videos.isEmpty && _query.text.isNotEmpty
             ? const Center(
                 child: Text("Result not foumd"),
               )
@@ -104,10 +104,10 @@ class _SearchScreenState extends State<SearchScreen> {
                 padding: const EdgeInsets.all(10),
                 child: ListView.builder(
                     key: _listKey,
-                    itemCount: videos.length,
+                    itemCount: _videos.length,
                     itemBuilder: (context, index) {
                       return MusicCard(
-                        video: videos[index],
+                        video: _videos[index],
                       );
                     }),
               );
