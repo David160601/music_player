@@ -1,30 +1,26 @@
 import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:music_player/provider/music_player_provider.dart';
 import 'package:path/path.dart';
 import 'package:flutter/material.dart';
 
-class MusicPlayerScreen extends StatefulWidget {
+class MusicPlayerScreen extends ConsumerStatefulWidget {
   final File music;
-  final AudioPlayer audioPlayer;
-  Function(File file) handlePlayMusic;
-  MusicPlayerScreen(
-      {super.key,
-      required this.music,
-      required this.handlePlayMusic,
-      required this.audioPlayer});
+
+  const MusicPlayerScreen({
+    super.key,
+    required this.music,
+  });
 
   @override
-  State<MusicPlayerScreen> createState() => _MusicPlayerScreenState();
+  ConsumerState<MusicPlayerScreen> createState() => _MusicPlayerScreenState();
 }
 
-class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
-  Duration _duration = Duration.zero;
+class _MusicPlayerScreenState extends ConsumerState<MusicPlayerScreen> {
   Duration _position = Duration.zero;
+  Duration _duration = Duration.zero;
   bool _isPlaying = false;
-  Future<void> handleChangePosition(double value) async {
-    await widget.audioPlayer.seek(Duration(seconds: value.toInt()));
-  }
-
   String formatDuration(Duration duration) {
     String minutes = (duration.inMinutes % 60).toString().padLeft(2, '0');
     String seconds = (duration.inSeconds % 60).toString().padLeft(2, '0');
@@ -35,21 +31,38 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
   void initState() {
     super.initState();
     start();
-    widget.audioPlayer.onDurationChanged.listen((event) {
-      setState(() {
-        _duration = event;
-      });
+  }
+
+  Future start() async {
+    setState(() {
+      _isPlaying = true;
     });
-    widget.audioPlayer.onPositionChanged.listen((event) {
+    Duration duration = await ref
+        .read(musicPlayerProvider.notifier)
+        .handlePlayMusic(widget.music);
+    setState(() {
+      _duration = duration;
+    });
+    final AudioPlayer audioPlayer = ref.watch(musicPlayerProvider).audioPlayer;
+    audioPlayer.onPositionChanged.listen((event) {
       setState(() {
-        _isPlaying = true;
         _position = event;
       });
     });
   }
 
-  void start() async {
-    await widget.handlePlayMusic(widget.music);
+  Future handlePauseResume() async {
+    if (_isPlaying) {
+      await ref.watch(musicPlayerProvider).audioPlayer.pause();
+      setState(() {
+        _isPlaying = false;
+      });
+    } else {
+      await ref.watch(musicPlayerProvider).audioPlayer.resume();
+      setState(() {
+        _isPlaying = true;
+      });
+    }
   }
 
   @override
@@ -86,7 +99,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
           max: _duration.inSeconds.toDouble(),
           value: _position.inSeconds.toDouble(),
           onChanged: (double value) {
-            handleChangePosition(value);
+            ref.read(musicPlayerProvider.notifier).handleChangePosition(value);
           },
         ),
         Padding(
@@ -95,7 +108,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(formatDuration(_position)),
-              Text(formatDuration(_duration))
+              Text(formatDuration(_duration)),
             ],
           ),
         ),
@@ -106,7 +119,8 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
             children: [
               IconButton(
                   onPressed: () {
-                    handleChangePosition(_position.inSeconds.toDouble() - 10);
+                    ref.read(musicPlayerProvider.notifier).handleChangePosition(
+                        _position.inSeconds.toDouble() - 10);
                   },
                   splashRadius: 25,
                   iconSize: 50,
@@ -119,9 +133,7 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                 child: IconButton(
                     iconSize: 40,
                     splashRadius: 45,
-                    onPressed: () {
-                      widget.handlePlayMusic(widget.music);
-                    },
+                    onPressed: handlePauseResume,
                     icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow)),
               ),
               const SizedBox(
@@ -130,7 +142,8 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
               IconButton(
                   splashRadius: 25,
                   onPressed: () {
-                    handleChangePosition(_position.inSeconds.toDouble() + 10);
+                    ref.read(musicPlayerProvider.notifier).handleChangePosition(
+                        _position.inSeconds.toDouble() + 10);
                   },
                   iconSize: 50,
                   icon: const Icon(Icons.skip_next)),

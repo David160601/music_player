@@ -17,22 +17,6 @@ class _HomeScreenState extends State<HomeScreen> {
   List<File> _musicFiles = [];
   late List<DownloadTask> _runningTasks = [];
   bool _loading = false;
-  final _audioPlayer = AudioPlayer();
-  File? playedMusic;
-  Future<void> handlePlayMusic(File file) async {
-    if (playedMusic == null) {
-      await _audioPlayer.play(UrlSource(file.path));
-    } else {
-      if (file != playedMusic) {
-        await _audioPlayer.pause();
-        await _audioPlayer.play(UrlSource(file.path));
-      }
-    }
-    setState(() {
-      playedMusic = file;
-    });
-    _audioPlayer.setReleaseMode(ReleaseMode.loop);
-  }
 
   Future<void> getRunningTasks() async {
     final tasks = await FlutterDownloader.loadTasks();
@@ -115,8 +99,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 Navigator.push(context, MaterialPageRoute(builder: (context) {
                   return MusicPlayerScreen(
                     music: _musicFiles[index],
-                    audioPlayer: _audioPlayer,
-                    handlePlayMusic: handlePlayMusic,
                   );
                 }));
               },

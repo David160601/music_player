@@ -44,7 +44,7 @@ dependencies:
   youtube_explode_dart: ^1.12.4
   external_path: ^1.0.3
   audioplayers: ^4.1.0
-
+  flutter_riverpod: ^2.3.6
  
 dev_dependencies:
   flutter_test:
