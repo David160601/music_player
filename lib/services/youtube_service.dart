@@ -5,7 +5,7 @@ class YoutubeService {
   static Future<List<YouTubeVideo>> getVidoes(String query) async {
     try {
       List<YouTubeVideo> videoResult = [];
-      int max = 25;
+      int max = 10;
       String type = "video";
       YoutubeAPI ytApi = YoutubeAPI(youtubeApiKey, maxResults: max, type: type);
       videoResult = await ytApi.search(query);

@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter_downloader/flutter_downloader.dart';
 import 'package:music_player/screens/music_player_screen.dart';
 import 'package:path/path.dart';
 import 'package:external_path/external_path.dart';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -15,37 +17,15 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<File> _musicFiles = [];
-  late List<DownloadTask> _runningTasks = [];
+  // late List<DownloadTask> _runningTasks = [];
   bool _loading = false;
 
-  Future<void> getRunningTasks() async {
-    final tasks = await FlutterDownloader.loadTasks();
-    final runningTasks = tasks!
-        .where((task) => task.status == DownloadTaskStatus.running)
-        .toList();
-    _runningTasks = runningTasks;
-  }
-
-  bool checkRunningTasks(String fileName) {
-    bool isRunning = false;
-    for (var item in _runningTasks) {
-      if (item.filename == fileName) {
-        isRunning = true;
-      }
-    }
-    return isRunning;
-  }
-
   Future<void> getMusicFiles() async {
-    String musicPath = await ExternalPath.getExternalStoragePublicDirectory(
-        ExternalPath.DIRECTORY_MUSIC);
-    Directory musicDir = Directory(musicPath);
+    Directory musicDir = await getApplicationDocumentsDirectory();
     List<FileSystemEntity> files = musicDir.listSync();
     List<File> mp3Files = [];
     for (FileSystemEntity file in files) {
-      if (file is File &&
-          file.path.endsWith('.mp3') &&
-          !checkRunningTasks(basename(file.path))) {
+      if (file is File && file.path.endsWith('.mp3')) {
         mp3Files.add(file);
       }
     }
@@ -59,7 +39,6 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _loading = true;
     });
-    await getRunningTasks();
     await getMusicFiles();
     setState(() {
       _loading = false;
@@ -87,9 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   ListView listOfMusics() {
     return ListView.separated(
-        separatorBuilder: (BuildContext context, int index) => const Divider(
-              color: Colors.red,
-            ),
+        separatorBuilder: (BuildContext context, int index) => const Divider(),
         itemCount: _musicFiles.length,
         itemBuilder: (context, index) {
           String fileName = basename(_musicFiles[index].path);
