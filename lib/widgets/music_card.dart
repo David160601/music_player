@@ -24,32 +24,44 @@ class _MusicCardState extends State<MusicCard>
       setState(() {
         loading = true;
       });
-      final status = await Permission.manageExternalStorage.request();
-      if (status.isGranted) {
-        var yt = YoutubeExplode();
-        final video = await yt.videos.get(widget.video.id);
-        final manifest =
-            await yt.videos.streamsClient.getManifest(video.id.value);
-        final audioStreamInfo = manifest.audioOnly.withHighestBitrate();
-        final streamUrl = audioStreamInfo.url;
-        var path = await ExternalPath.getExternalStoragePublicDirectory(
-            ExternalPath.DIRECTORY_MUSIC);
-        await FlutterDownloader.enqueue(
-          url: streamUrl.toString(),
-          fileName: "${widget.video.title}.mp3",
-          savedDir: path,
-          allowCellular: true,
-          showNotification: true,
-        );
-        yt.close();
-      } else {}
-      setState(() {
-        loading = false;
-      });
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("${widget.video.title} added to download list"),
-      ));
+      final tasks = await FlutterDownloader.loadTasks();
+      final runningTasks = tasks!
+          .where((task) => task.status == DownloadTaskStatus.running)
+          .toList();
+
+      if (runningTasks?.length == 3) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Can not download more than 3 musics"),
+        ));
+      } else {
+        final status = await Permission.manageExternalStorage.request();
+        if (status.isGranted) {
+          var yt = YoutubeExplode();
+          final video = await yt.videos.get(widget.video.id);
+          final manifest =
+              await yt.videos.streamsClient.getManifest(video.id.value);
+          final audioStreamInfo = manifest.audioOnly.withHighestBitrate();
+          final streamUrl = audioStreamInfo.url;
+          var path = await ExternalPath.getExternalStoragePublicDirectory(
+              ExternalPath.DIRECTORY_MUSIC);
+          await FlutterDownloader.enqueue(
+              url: streamUrl.toString(),
+              fileName: "${widget.video.id}.mp3",
+              savedDir: path,
+              allowCellular: true,
+              showNotification: true,
+              openFileFromNotification: true);
+          yt.close();
+        } else {}
+        setState(() {
+          loading = false;
+        });
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("${widget.video.title} added to download list"),
+        ));
+      }
     } catch (e) {
       setState(() {
         loading = false;
